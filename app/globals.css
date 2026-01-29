@@ -1,0 +1,454 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 温暖明亮主题 - 奶油白背景 */
+    --background: 40 40% 97%;
+    --foreground: 25 30% 18%;
+
+    /* 边框 - 温暖的浅棕色 */
+    --border: 35 25% 85%;
+
+    /* 主色 - 温暖橙色 */
+    --primary: 25 85% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    /* 静音色 - 温暖的浅灰 */
+    --muted: 35 20% 92%;
+    --muted-foreground: 25 15% 45%;
+
+    /* 强调色 - 金琥珀色 */
+    --accent: 35 90% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* 卡片背景 */
+    --card: 40 35% 99%;
+    --card-foreground: 25 30% 18%;
+
+    /* 成功/警告/危险色 */
+    --success: 145 60% 40%;
+    --warning: 40 90% 50%;
+    --destructive: 0 70% 55%;
+
+    /* 纸质纹理 */
+    --paper-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  /* 深色模式 - 专业金融风格 */
+  .dark {
+    --background: 220 20% 8%;
+    --foreground: 40 20% 95%;
+    --border: 220 15% 18%;
+    --primary: 35 90% 60%;
+    --primary-foreground: 220 20% 8%;
+    --muted: 220 15% 14%;
+    --muted-foreground: 40 15% 65%;
+    --accent: 35 95% 55%;
+    --accent-foreground: 220 20% 8%;
+    --card: 220 18% 11%;
+    --card-foreground: 40 20% 95%;
+    --success: 145 60% 45%;
+    --warning: 40 90% 55%;
+    --destructive: 0 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 纸质纹理背景 */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: var(--paper-texture);
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+/* 自定义动画 */
+@keyframes ink-spread {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    filter: blur(10px);
+  }
+  50% {
+    opacity: 0.5;
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes bookmark-slide {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes annotation-draw {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(249, 115, 22, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
+  }
+}
+
+.ink-spread {
+  animation: ink-spread 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.bookmark-slide {
+  animation: bookmark-slide 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.annotation-draw {
+  animation: annotation-draw 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* 手写批注风格 */
+.annotation {
+  position: relative;
+  padding: 1rem;
+  border-left: 3px solid #f97316;
+  background: linear-gradient(
+    to right,
+    rgba(249, 115, 22, 0.05),
+    transparent
+  );
+}
+
+.annotation::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: #f97316;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: annotation-draw 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 书签式标签 */
+.bookmark-tab {
+  position: relative;
+  padding: 0.5rem 1rem;
+  background: hsl(var(--muted));
+  border-top-right-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  clip-path: polygon(0 0, 100% 0, 90% 50%, 100% 100%, 0 100%);
+}
+
+/* 数据高亮效果 */
+.data-highlight {
+  position: relative;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.data-highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    #f97316,
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.data-highlight:hover::after {
+  opacity: 1;
+}
+
+/* 古籍风格边框 */
+.ancient-border {
+  position: relative;
+  border: 1px solid hsl(var(--border));
+}
+
+.ancient-border::before,
+.ancient-border::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #f97316;
+}
+
+.ancient-border::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.ancient-border::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+/* 渐变文字效果 */
+.gradient-text {
+  background: linear-gradient(
+    135deg,
+    #ea580c,
+    #d97706
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 毛玻璃效果 */
+.glass-effect {
+  background: hsl(var(--background) / 0.85);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* 悬浮卡片效果 */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.15),
+    0 0 0 1px hsl(var(--accent) / 0.2);
+}
+
+/* 打字机效果 */
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriter 2s steps(40) forwards;
+}
+
+/* 脉冲点 */
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* 数据流动效果 */
+@keyframes data-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.data-flow {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(249, 115, 22, 0.1),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: data-flow 3s linear infinite;
+}
+
+/* ========== Landing Page 样式 ========== */
+
+/* Landing Page 深色背景覆盖 */
+.landing-page {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 100%;
+}
+
+/* Hero 文字渐变 */
+.hero-text-gradient {
+  background: linear-gradient(
+    135deg,
+    #f97316 0%,
+    #fbbf24 50%,
+    #f97316 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* 搜索框发光效果 */
+.search-glow {
+  box-shadow:
+    0 0 20px rgba(249, 115, 22, 0.3),
+    0 0 40px rgba(249, 115, 22, 0.1),
+    inset 0 0 20px rgba(249, 115, 22, 0.05);
+}
+
+/* Feature 卡片悬浮效果 */
+.feature-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow:
+    0 20px 40px -20px rgba(249, 115, 22, 0.3),
+    0 0 0 1px rgba(249, 115, 22, 0.2);
+}
+
+/* Company 卡片 3D 效果 */
+.company-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.company-card:hover {
+  box-shadow:
+    0 25px 50px -12px rgba(249, 115, 22, 0.25),
+    0 0 0 1px rgba(249, 115, 22, 0.3);
+}
+
+/* 文字渐入动画 */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 逐字渐入 */
+@keyframes char-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotateX(-90deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+}
+
+/* 滚动视差容器 */
+.parallax-container {
+  perspective: 1000px;
+  overflow-x: hidden;
+}
+
+/* 发光边框动画 */
+@keyframes border-glow {
+  0%, 100% {
+    border-color: rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    border-color: rgba(249, 115, 22, 0.6);
+  }
+}
+
+.border-glow {
+  animation: border-glow 2s ease-in-out infinite;
+}
+
+/* 背景网格 */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(249, 115, 22, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(249, 115, 22, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* 光晕效果 */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  pointer-events: none;
+}
