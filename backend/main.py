@@ -21,10 +21,10 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# CORS 配置
+# CORS 配置 - 允许所有前端域名访问
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["*"],  # 允许所有域名（生产环境可改为具体域名）
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
