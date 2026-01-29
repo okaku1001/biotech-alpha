@@ -5,9 +5,11 @@ from typing import Optional, Dict, Any
 import os
 from dotenv import load_dotenv
 import anthropic
+import google.generativeai as genai
 from sec_api import QueryApi
 import uuid
 from datetime import datetime
+import asyncio
 
 # 加载环境变量
 load_dotenv()
@@ -29,8 +31,18 @@ app.add_middleware(
 )
 
 # 初始化 API 客户端
-anthropic_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+anthropic_client = anthropic.Anthropic(
+    api_key=os.getenv("ANTHROPIC_API_KEY"),
+    base_url=os.getenv("ANTHROPIC_BASE_URL")
+)
 sec_query_api = QueryApi(api_key=os.getenv("SEC_API_KEY"))
+
+# 初始化 Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+
+# AI 引擎配置
+AI_ENGINE = os.getenv("AI_ENGINE", "dual")  # claude / gemini / dual
 
 # 数据模型
 class AnalyzeRequest(BaseModel):
@@ -214,21 +226,21 @@ async def perform_analysis(ticker: str, filing_type: str = "10-K") -> Dict[str, 
     company_name = filing.get("companyName", "Unknown")
     filing_url = filing.get("linkToFilingDetails", "")
 
-    # 3. 调用 Claude API 进行分析
+    # 3. 调用 AI API 进行分析（根据配置使用 Claude/Gemini/双引擎）
     # Protocol A: 业务实质还原
-    reality_analysis = await analyze_with_claude(
+    reality_analysis = await analyze_with_ai(
         PROTOCOL_A,
         f"Company: {company_name} ({ticker})\nAnalyze the business identity."
     )
 
     # Protocol B: 财务生存透视
-    survival_analysis = await analyze_with_claude(
+    survival_analysis = await analyze_with_ai(
         PROTOCOL_B,
         f"Company: {company_name} ({ticker})\nAnalyze financial survival."
     )
 
     # Protocol C: 战场推演
-    competition_analysis = await analyze_with_claude(
+    competition_analysis = await analyze_with_ai(
         PROTOCOL_C,
         f"Company: {company_name} ({ticker})\nAnalyze competitive landscape."
     )
@@ -262,7 +274,55 @@ async def analyze_with_claude(protocol: str, context: str) -> str:
 
         return message.content[0].text
     except Exception as e:
-        return f"Analysis failed: {str(e)}"
+        return f"Claude analysis failed: {str(e)}"
+
+async def analyze_with_gemini(protocol: str, context: str) -> str:
+    """
+    使用 Gemini API 进行分析
+    """
+    try:
+        response = gemini_model.generate_content(f"{protocol}\n\n{context}")
+        return response.text
+    except Exception as e:
+        return f"Gemini analysis failed: {str(e)}"
+
+async def analyze_with_dual_engine(protocol: str, context: str) -> str:
+    """
+    双引擎并行调用，使用先返回的结果
+    """
+    try:
+        # 创建两个并行任务
+        claude_task = asyncio.create_task(analyze_with_claude(protocol, context))
+        gemini_task = asyncio.create_task(analyze_with_gemini(protocol, context))
+
+        # 等待第一个完成的任务
+        done, pending = await asyncio.wait(
+            [claude_task, gemini_task],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+
+        # 获取第一个完成的结果
+        result = done.pop().result()
+
+        # 取消未完成的任务
+        for task in pending:
+            task.cancel()
+
+        return result
+    except Exception as e:
+        # 如果并行失败，回退到 Claude
+        return await analyze_with_claude(protocol, context)
+
+async def analyze_with_ai(protocol: str, context: str) -> str:
+    """
+    根据配置选择 AI 引擎
+    """
+    if AI_ENGINE == "gemini":
+        return await analyze_with_gemini(protocol, context)
+    elif AI_ENGINE == "dual":
+        return await analyze_with_dual_engine(protocol, context)
+    else:  # 默认使用 claude
+        return await analyze_with_claude(protocol, context)
 
 if __name__ == "__main__":
     import uvicorn
