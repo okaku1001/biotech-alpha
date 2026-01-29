@@ -10,6 +10,8 @@ from sec_api import QueryApi
 import uuid
 from datetime import datetime
 import asyncio
+import json
+import re
 
 # 加载环境变量
 load_dotenv()
@@ -110,6 +112,23 @@ Output JSON format:
   "market_dynamics": "..."
 }
 """
+
+def extract_json_from_text(text: str) -> Dict[str, Any]:
+    """从 AI 返回的文本中提取 JSON 对象"""
+    try:
+        # 尝试找到 JSON 代码块
+        json_match = re.search(r'```json\s*([\s\S]*?)\s*```', text)
+        if json_match:
+            return json.loads(json_match.group(1))
+
+        # 尝试找到 JSON 对象
+        json_match = re.search(r'\{[\s\S]*\}', text)
+        if json_match:
+            return json.loads(json_match.group(0))
+
+        return {}
+    except json.JSONDecodeError:
+        return {}
 
 @app.get("/")
 async def root():
@@ -233,23 +252,27 @@ async def perform_analysis(ticker: str, filing_type: str = "10-K") -> Dict[str, 
 
     # 3. 调用 AI API 进行分析（根据配置使用 Claude/Gemini/双引擎）
     # Protocol A: 业务实质还原
-    reality_analysis = await analyze_with_ai(
+    reality_text = await analyze_with_ai(
         PROTOCOL_A,
         f"Company: {company_name} ({ticker})\nAnalyze the business identity."
     )
+    reality_json = extract_json_from_text(reality_text)
 
     # Protocol B: 财务生存透视
-    survival_analysis = await analyze_with_ai(
+    survival_text = await analyze_with_ai(
         PROTOCOL_B,
         f"Company: {company_name} ({ticker})\nAnalyze financial survival."
     )
+    survival_json = extract_json_from_text(survival_text)
 
     # Protocol C: 战场推演
-    competition_analysis = await analyze_with_ai(
+    competition_text = await analyze_with_ai(
         PROTOCOL_C,
         f"Company: {company_name} ({ticker})\nAnalyze competitive landscape."
     )
+    competition_json = extract_json_from_text(competition_text)
 
+    # 构建符合前端期望的数据结构
     return {
         "company_name": company_name,
         "ticker": ticker.upper(),
@@ -257,9 +280,23 @@ async def perform_analysis(ticker: str, filing_type: str = "10-K") -> Dict[str, 
         "filing_date": filing.get("filedAt", ""),
         "filing_url": filing_url,
         "analysis": {
-            "reality": reality_analysis,
-            "survival": survival_analysis,
-            "competition": competition_analysis
+            "reality": {
+                "narrative_label": reality_json.get("narrative_label", "Unknown"),
+                "economic_label": reality_json.get("economic_label", "Unknown"),
+                "reality_gap_score": reality_json.get("reality_gap_score", 5),
+                "key_insight": reality_json.get("key_insight", "")
+            },
+            "survival": {
+                "runway_months": survival_json.get("runway_months"),
+                "burn_rate_monthly": survival_json.get("burn_rate_monthly", ""),
+                "financial_health": survival_json.get("financial_health", "Unknown"),
+                "key_risks": survival_json.get("key_risks", [])
+            },
+            "competition": {
+                "competitors": competition_json.get("competitors", []),
+                "kill_switch": competition_json.get("kill_switch", "Unknown"),
+                "market_dynamics": competition_json.get("market_dynamics", "")
+            }
         }
     }
 
