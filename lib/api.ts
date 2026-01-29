@@ -1,7 +1,5 @@
-// 生产环境使用 Railway 后端，开发环境使用本地
-const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'https://zooming-hope-production-efcc.up.railway.app'
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+// API 基础地址
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://zooming-hope-production-efcc.up.railway.app';
 
 export interface CompanyInfo {
   ticker: string;
