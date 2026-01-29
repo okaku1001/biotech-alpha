@@ -207,20 +207,25 @@ async def perform_analysis(ticker: str, filing_type: str = "10-K") -> Dict[str, 
     """
     执行完整的财报分析
     """
-    # 1. 获取财报数据
-    query = {
-        "query": f"ticker:{ticker.upper()} AND formType:\"{filing_type}\"",
-        "from": "0",
-        "size": "1",
-        "sort": [{"filedAt": {"order": "desc"}}]
-    }
+    # 1. 获取财报数据 - 先尝试 10-K，如果没有则尝试 20-F（外国公司年报）
+    filing = None
+    actual_filing_type = filing_type
 
-    filings = sec_query_api.get_filings(query)
+    for form_type in [filing_type, "20-F", "10-K"]:
+        query = {
+            "query": f"ticker:{ticker.upper()} AND formType:\"{form_type}\"",
+            "from": "0",
+            "size": "1",
+            "sort": [{"filedAt": {"order": "desc"}}]
+        }
+        filings = sec_query_api.get_filings(query)
+        if filings and len(filings.get("filings", [])) > 0:
+            filing = filings["filings"][0]
+            actual_filing_type = form_type
+            break
 
-    if not filings or len(filings.get("filings", [])) == 0:
-        raise Exception(f"No {filing_type} filings found for {ticker}")
-
-    filing = filings["filings"][0]
+    if not filing:
+        raise Exception(f"No annual filings (10-K or 20-F) found for {ticker}")
 
     # 2. 提取关键信息（简化版，实际应解析完整的 10-K）
     company_name = filing.get("companyName", "Unknown")
@@ -248,7 +253,7 @@ async def perform_analysis(ticker: str, filing_type: str = "10-K") -> Dict[str, 
     return {
         "company_name": company_name,
         "ticker": ticker.upper(),
-        "filing_type": filing_type,
+        "filing_type": actual_filing_type,
         "filing_date": filing.get("filedAt", ""),
         "filing_url": filing_url,
         "analysis": {
